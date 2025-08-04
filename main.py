@@ -5,7 +5,7 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     MessageHandler,
-    filters,
+    filters
 )
 
 from bot.handlers import (
@@ -16,9 +16,9 @@ from bot.handlers import (
 )
 from config import TELEGRAM_BOT_TOKEN
 
-# Logging
+# Configure logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
@@ -27,18 +27,15 @@ async def main():
     try:
         application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-        # Register Handlers
+        # Add handlers
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CallbackQueryHandler(handle_button_callback))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-        # Start the bot
-        logger.info("Starting the Telegram bot...")
-        await application.initialize()
-        await application.start()
-        await application.updater.start_polling()
-        await application.updater.idle()
+        # Run the bot
+        logger.info("Bot is starting...")
+        await application.run_polling()
     except Exception as e:
         logger.error(f"Error running Telegram bot: {e}")
 
