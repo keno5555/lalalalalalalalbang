@@ -1,0 +1,9 @@
+python-telegram-bot==20.7
+flask==2.3.3
+gunicorn==21.2.0
+spotipy==2.23.0
+yt-dlp==2024.4.9
+pytube==15.0.0
+requests==2.31.0
+imageio-ffmpeg==0.4.8
+beautifulsoup4==4.12.3
