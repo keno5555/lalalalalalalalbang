@@ -3,49 +3,44 @@ import logging
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    MessageHandler,
     CallbackQueryHandler,
-    filters
+    MessageHandler,
+    filters,
 )
+
 from bot.handlers import (
     start_command,
     help_command,
     handle_button_callback,
     handle_message
 )
+from config import TELEGRAM_BOT_TOKEN
 
-# Configure logging
+# Logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-async def run_telegram_bot_async():
+async def main():
     try:
-        import config
+        application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-        # Create the application
-        application = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).build()
-
-        # Register handlers
+        # Register Handlers
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CallbackQueryHandler(handle_button_callback))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         # Start the bot
-        logger.info("Starting Telegram Music Bot...")
+        logger.info("Starting the Telegram bot...")
         await application.initialize()
         await application.start()
-        await application.bot.set_my_commands([
-            ("start", "Start the bot"),
-            ("help", "Get help"),
-        ])
-        await application.run_polling()
-
+        await application.updater.start_polling()
+        await application.updater.idle()
     except Exception as e:
         logger.error(f"Error running Telegram bot: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(run_telegram_bot_async())
+    asyncio.run(main())
