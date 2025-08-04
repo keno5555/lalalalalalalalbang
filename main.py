@@ -1,43 +1,47 @@
-import asyncio
 import logging
+import os
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    CallbackQueryHandler,
     MessageHandler,
-    filters
+    CallbackQueryHandler,
+    filters,
 )
-
 from bot.handlers import (
     start_command,
     help_command,
+    handle_message,
     handle_button_callback,
-    handle_message
 )
-from config import TELEGRAM_BOT_TOKEN
 
-# Configure logging
+# Logging Configuration
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-async def main():
+def main():
     try:
-        application = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+        # Read bot token from environment variable
+        TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+        if not TOKEN:
+            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment variables.")
 
-        # Add handlers
-        application.add_handler(CommandHandler("start", start_command))
-        application.add_handler(CommandHandler("help", help_command))
-        application.add_handler(CallbackQueryHandler(handle_button_callback))
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        # Create Application instance (new way)
+        app = ApplicationBuilder().token(TOKEN).build()
 
-        # Run the bot
-        logger.info("Bot is starting...")
-        await application.run_polling()
+        # Register handlers
+        app.add_handler(CommandHandler("start", start_command))
+        app.add_handler(CommandHandler("help", help_command))
+        app.add_handler(CallbackQueryHandler(handle_button_callback))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+        logger.info("✅ Bot started successfully.")
+        app.run_polling()
+
     except Exception as e:
-        logger.error(f"Error running Telegram bot: {e}")
+        logger.error(f"❌ Error running Telegram bot: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
