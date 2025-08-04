@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Telegram Music Bot - Main Entry Point
+Provides seamless music downloads with interactive buttons and quality selection.
+Runs with Flask web server for Render deployment.
+"""
+
 import logging
 import os
 import threading
@@ -7,7 +13,7 @@ import asyncio
 from flask import Flask, jsonify, render_template
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 from bot.handlers import (
-    start_command, help_command, handle_spotify_url,
+    start_command, help_command, handle_spotify_url, 
     handle_button_callback, handle_message
 )
 
@@ -18,6 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Flask app for Render web service
 app = Flask(__name__)
 bot_status = {"running": False, "start_time": time.time(), "last_seen": 0}
 
@@ -28,7 +35,7 @@ def home():
 @app.route('/health')
 def health():
     return jsonify({
-        "status": "healthy",
+        "status": "healthy", 
         "timestamp": time.time(),
         "bot_running": bot_status["running"],
         "service": "Telegram Music Bot"
@@ -61,14 +68,14 @@ def api_status():
     })
 
 async def run_telegram_bot_async():
+    """Run the Telegram bot asynchronously."""
     try:
         bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not bot_token:
             logger.error("TELEGRAM_BOT_TOKEN environment variable is required")
             return
-
+        
         application = Application.builder().token(bot_token).build()
-
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CallbackQueryHandler(handle_button_callback))
@@ -80,25 +87,24 @@ async def run_telegram_bot_async():
         logger.info("Starting Telegram Music Bot...")
         await application.initialize()
         await application.start()
-        await application.bot.set_my_commands([
-            ("start", "Start the bot"),
-            ("help", "Help and usage")
-        ])
         await application.run_polling()
+
     except Exception as e:
         logger.error(f"❌ Error running Telegram bot: {e}")
         bot_status["running"] = False
 
 def run_telegram_bot():
+    """Run the Telegram bot in a separate thread with asyncio."""
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(run_telegram_bot_async())
     except Exception as e:
-        logger.error(f"Error in bot thread: {e}")
+        logger.error(f"❌ Error in bot thread: {e}")
         bot_status["running"] = False
 
 def main():
+    """Initialize and run both Flask web server and Telegram bot."""
     print("🎵 Starting Telegram Music Bot with Flask Web Server...")
     port = int(os.environ.get("PORT", 5000))
     print(f"🌐 Port configuration: {port} (from PORT env var)")
@@ -106,6 +112,7 @@ def main():
     bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
     bot_thread.start()
     print("🤖 Telegram bot started in background thread...")
+
     time.sleep(2)
 
     print(f"🚀 Starting Flask web server on port {port}...")
