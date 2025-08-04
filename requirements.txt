@@ -6,3 +6,4 @@ requests==2.31.0
 pytube==15.0.0
 gunicorn==21.2.0
 imageio-ffmpeg==0.4.8
+beautifulsoup4
