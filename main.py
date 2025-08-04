@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Telegram Music Bot - Main Entry Point
-Provides seamless music downloads with interactive buttons and quality selection.
-Runs with Flask web server for Render deployment.
+Runs Flask for Render and starts the Telegram bot (async).
 """
 
 import logging
@@ -16,25 +15,25 @@ from bot.handlers import (
     start_command, help_command, handle_button_callback, handle_message
 )
 
-# Configure logging
+# Logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# Flask app for Render web service
+# Flask setup
 app = Flask(__name__)
 bot_status = {"running": False, "start_time": time.time(), "last_seen": 0}
 
 @app.route('/')
 def home():
-    return "SpotifyPulse bot is running!"
+    return "🎵 Telegram Music Bot is running!"
 
 @app.route('/health')
 def health():
     return jsonify({
-        "status": "healthy", 
+        "status": "healthy",
         "timestamp": time.time(),
         "bot_running": bot_status["running"],
         "service": "Telegram Music Bot"
@@ -42,40 +41,34 @@ def health():
 
 @app.route('/status')
 def status_page():
-    try:
-        return render_template('status.html')
-    except:
-        return f"""
-        <html>
-        <head><title>MusicFlow Bot Status</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1>🎵 MusicFlow Bot Status</h1>
-            <p>Bot is {'✅ Running' if bot_status['running'] else '❌ Stopped'}</p>
-            <p>Uptime: {int(time.time() - bot_status['start_time'])} seconds</p>
-            <p>Service: Telegram Music Download Bot</p>
-        </body>
-        </html>
-        """
+    return f"""
+    <html><head><title>Bot Status</title></head>
+    <body style="font-family:sans-serif;text-align:center;padding:40px;">
+    <h1>🎶 Bot Status</h1>
+    <p>Running: {'✅ Yes' if bot_status['running'] else '❌ No'}</p>
+    <p>Uptime: {int(time.time() - bot_status['start_time'])}s</p>
+    </body></html>
+    """
 
 @app.route('/api/status')
 def api_status():
     return jsonify({
         "bot_running": bot_status["running"],
-        "uptime": time.time() - bot_status.get("start_time", time.time()),
-        "last_seen": bot_status["last_seen"],
-        "service": "MusicFlow Bot"
+        "uptime": time.time() - bot_status["start_time"],
+        "last_seen": bot_status["last_seen"]
     })
 
 async def run_telegram_bot_async():
-    """Run the Telegram bot asynchronously (PTB v20+ compatible)."""
+    """Run Telegram bot using async Application."""
     try:
         bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not bot_token:
-            logger.error("TELEGRAM_BOT_TOKEN environment variable is required")
+            logger.error("❌ TELEGRAM_BOT_TOKEN not set in environment.")
             return
 
         application = Application.builder().token(bot_token).build()
 
+        # Add handlers
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CallbackQueryHandler(handle_button_callback))
@@ -84,7 +77,7 @@ async def run_telegram_bot_async():
         bot_status["running"] = True
         bot_status["last_seen"] = time.time()
 
-        logger.info("Starting Telegram Music Bot...")
+        logger.info("🤖 Telegram bot starting...")
         await application.run_polling()
 
     except Exception as e:
@@ -92,34 +85,24 @@ async def run_telegram_bot_async():
         bot_status["running"] = False
 
 def run_telegram_bot():
-    """Run the bot in a separate asyncio thread."""
+    """Run bot in a separate thread."""
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(run_telegram_bot_async())
     except Exception as e:
-        logger.error(f"❌ Error in bot thread: {e}")
+        logger.error(f"❌ Bot thread error: {e}")
         bot_status["running"] = False
 
 def main():
-    """Initialize and run Flask + Telegram bot."""
-    print("🎵 Starting Telegram Music Bot with Flask Web Server...")
-    port = int(os.environ.get("PORT", 5000))
-    print(f"🌐 Port configuration: {port} (from PORT env var)")
+    print("🚀 Starting Flask + Telegram bot service...")
+    port = int(os.getenv("PORT", 5000))
 
     bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
     bot_thread.start()
-    print("🤖 Telegram bot started in background thread...")
 
     time.sleep(2)
-
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=False,
-        use_reloader=False,
-        threaded=True
-    )
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False, threaded=True)
 
 if __name__ == "__main__":
     main()
