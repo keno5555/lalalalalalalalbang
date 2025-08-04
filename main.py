@@ -13,8 +13,7 @@ import asyncio
 from flask import Flask, jsonify, render_template
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 from bot.handlers import (
-    start_command, help_command, handle_spotify_url, 
-    handle_button_callback, handle_message
+    start_command, help_command, handle_button_callback, handle_message
 )
 
 # Configure logging
@@ -68,45 +67,42 @@ def api_status():
     })
 
 async def run_telegram_bot_async():
+    """Run the Telegram bot asynchronously (PTB v20+ compatible)."""
     try:
         bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not bot_token:
             logger.error("TELEGRAM_BOT_TOKEN environment variable is required")
             return
-        
+
         application = Application.builder().token(bot_token).build()
-        
+
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CommandHandler("help", help_command))
         application.add_handler(CallbackQueryHandler(handle_button_callback))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-        
+
         bot_status["running"] = True
         bot_status["last_seen"] = time.time()
-        
+
         logger.info("Starting Telegram Music Bot...")
-        await application.initialize()
-        await application.start()
-        await application.updater.start_polling()
-        
-        while True:
-            bot_status["last_seen"] = time.time()
-            await asyncio.sleep(1)
-        
+        await application.run_polling()
+
     except Exception as e:
-        logger.error(f"Error running Telegram bot: {e}")
+        logger.error(f"❌ Error running Telegram bot: {e}")
         bot_status["running"] = False
 
 def run_telegram_bot():
+    """Run the bot in a separate asyncio thread."""
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(run_telegram_bot_async())
     except Exception as e:
-        logger.error(f"Error in bot thread: {e}")
+        logger.error(f"❌ Error in bot thread: {e}")
         bot_status["running"] = False
 
 def main():
+    """Initialize and run Flask + Telegram bot."""
     print("🎵 Starting Telegram Music Bot with Flask Web Server...")
     port = int(os.environ.get("PORT", 5000))
     print(f"🌐 Port configuration: {port} (from PORT env var)")
@@ -114,12 +110,9 @@ def main():
     bot_thread = threading.Thread(target=run_telegram_bot, daemon=True)
     bot_thread.start()
     print("🤖 Telegram bot started in background thread...")
-    
+
     time.sleep(2)
-    
-    print(f"🚀 Starting Flask web server on port {port}...")
-    print(f"🌐 Server will be accessible on all interfaces (0.0.0.0:{port})")
-    
+
     app.run(
         host='0.0.0.0',
         port=port,
